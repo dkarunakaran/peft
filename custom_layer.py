@@ -18,7 +18,7 @@ class LoraLayer(keras.layers.Layer):
         self._num_heads = original_layer_config["output_shape"][-2]
         self._hidden_dim = self._num_heads * original_layer_config["output_shape"][-1]
 
-        self.down_layer = keras.layers.Dense(
+        self.A = keras.layers.Dense(
             units=rank,
             use_bias=use_bias,
             kernel_initializer=keras.initializers.RandomNormal(stddev=1 / self.rank),
@@ -26,7 +26,7 @@ class LoraLayer(keras.layers.Layer):
             name="lora_a"
         )
 
-        self.up_layer = keras.layers.EinsumDense(
+        self.B = keras.layers.EinsumDense(
             equation=original_layer_config["equation"],
             output_shape=original_layer_config["output_shape"],
             kernel_initializer="zeros",
@@ -35,5 +35,5 @@ class LoraLayer(keras.layers.Layer):
         )
     def call(self, inputs):
         original_output = self.original_layer(inputs)
-        lora_output = self.up_layer(self.down_layer(inputs)) * self.scale
+        lora_output = self.B(self.A(inputs)) * self.scale
         return original_output + lora_output
